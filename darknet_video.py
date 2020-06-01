@@ -45,6 +45,11 @@ def YOLO():
     configPath = "./cfg/yolov4.cfg"
     weightPath = "./yolov4.weights"
     metaPath = "./cfg/coco.data"
+
+    print('configPath: {}'.format(configPath))
+    print('weightPath: {}'.format(weightPath))
+    print('metaPath: {}'.format(metaPath))
+
     if not os.path.exists(configPath):
         raise ValueError("Invalid config path `" +
                          os.path.abspath(configPath)+"`")
