@@ -1,0 +1,34 @@
+command: ! ./darknet detector map data/obj.data cfg/yolo-obj.cfg backup/yolo-obj_6000.weights -iou_thresh 0.24 -benchmark > result_iouthresh_024.txt
+
+net.optimized_memory = 0 
+mini_batch = 1, batch = 16, time_steps = 1, train = 0 
+nms_kind: greedynms (1), beta = 0.600000 
+nms_kind: greedynms (1), beta = 0.600000 
+nms_kind: greedynms (1), beta = 0.600000 
+
+ seen 64, trained: 384 K-images (6 Kilo-batches_64) 
+
+ calculation mAP (mean average precision)...
+
+ detections_count = 750, unique_truth_count = 597  
+ rank = 0 of ranks = 750 
+ rank = 100 of ranks = 750 
+ rank = 200 of ranks = 750 
+ rank = 300 of ranks = 750 
+ rank = 400 of ranks = 750 
+ rank = 500 of ranks = 750 
+ rank = 600 of ranks = 750 
+ rank = 700 of ranks = 750 
+class_id = 0, name = corn, ap = 55.66%   	 (TP = 222, FP = 94) 
+class_id = 1, name = weed, ap = 77.96%   	 (TP = 205, FP = 47) 
+
+ for conf_thresh = 0.25, precision = 0.75, recall = 0.72, F1-score = 0.73 
+ for conf_thresh = 0.25, TP = 427, FP = 141, FN = 170, average IoU = 43.79 % 
+
+ IoU threshold = 24 %, used Area-Under-Curve for each unique Recall 
+ mean average precision (mAP@0.24) = 0.668106, or 66.81 % 
+
+Set -points flag:
+ `-points 101` for MS COCO 
+ `-points 11` for PascalVOC 2007 (uncomment `difficult` in voc.data) 
+ `-points 0` (AUC) for ImageNet, PascalVOC 2010-2012, your custom dataset
