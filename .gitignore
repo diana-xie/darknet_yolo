@@ -54,3 +54,9 @@ include/darknet/
 uselib
 uselib_track
 darknet
+
+# Added
+.idea/
+.mp4
+backup/
+darknet53.conv.74
