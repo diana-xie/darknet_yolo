@@ -1,15 +1,13 @@
 import os
 import re
-import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import logging
 
-# params
-COST_FP_WEED = 0.3  # Cost incurred, when incorrectly killing 1 corn plant
-COST_TP_WEED = 0.5  # Cost saved, when correctly killing 1 weed plant
+# internal imports
+from analysis.generate_plots import make_save_plots
 
 # setup
-FILES = [f for f in os.listdir('ap') if f.endswith('.txt')]  # files with all the data
 DATA_REGEX = {'iou_threshold': "mAP@(\d+\.\d+)",
               'conf_threshold': "for conf_thresh = (\d+\.\d+), precision",
               'ap_corn': "name = corn, ap = (\d+\.\d+)",  # average precision, corn
@@ -18,12 +16,11 @@ DATA_REGEX = {'iou_threshold': "mAP@(\d+\.\d+)",
               'tp_weed': "name = weed.+\(TP = (\d+)",
               'fp_corn': "name = corn.+FP = (\d+)",  # false positives
               'fp_weed': "name = weed.+FP = (\d+)",
-              'average_iou': "average IoU.+ (\d+\.\d+)",
+              'average_iou': "average IoU = (\d+\.\d+)",
               'm_ap': "mean average precision.+ = (\d+\.\d+)",
               'precision': ", precision = (\d+\.\d+),",
               'recall': ", recall = (\d+\.\d+), ",
-              'f1': "F1-score = (\d+\.\d+), ",
-              'iou_average': "average IoU = (\d+\.\d+), "
+              'f1': "F1-score = (\d+\.\d+)"
               }
 
 
@@ -34,10 +31,8 @@ def extract_data(FILES: list):
     ----------
     FILES: list of files
 
-    Returns
-    -------
-
     """
+    # extract data
     results = []
     for filename in FILES:
         # open data file
@@ -47,107 +42,68 @@ def extract_data(FILES: list):
         except Exception as ex:
             logging.error("Error reading file '{}': {}".format(filename, ex))
             raise ex
-        # extract data
+        # extract data using regex
+        data_extracted = {}
         for variable_name, variable_regex in DATA_REGEX.items():
-            data = {}
             try:
-                data[variable_name] = re.compile(variable_regex).findall(text)[0]
+                data_extracted[variable_name] = re.compile(variable_regex).findall(text)[0]
             except Exception as ex:
                 logging.error("Error getting data from file '{}': {}".format(filename, ex))
-                raise ex
-            results.append(data)
-    df_results = pd.DataFrame(results).astype(float)
-    return df_results
+                data_extracted[variable_name] = 'nan'
+        results.append(data_extracted)
+
+    # postprocessing
+    results = pd.DataFrame(results).astype(float)
+    results = results[results['precision'].notnull()]
+
+    return results
 
 
-def convert_to_numeric(df_results: pd.DataFrame):
+def convert_to_numeric(data: pd.DataFrame):
     """
     Converts data from results, to numeric. Also performs scaling
     Parameters
     ----------
-    df_results: dataframe of results, which were extracted from txt files in extract_data()
-
-    Returns
-    -------
+    data: dataframe of results, which were extracted from txt files in extract_data()
 
     """
-    # % to decimal
-    df_results[['ap_corn', 'ap_weed', 'average_iou']] = df_results[['ap_corn', 'ap_weed', 'average_iou']] / 100
-    # df_results = df_results.sort_values('iou_threshold') # sort rows by iou_threshold
-    return df_results
+    data[['ap_corn', 'ap_weed', 'average_iou']] = data[['ap_corn', 'ap_weed', 'average_iou']] / 100  # % to decimal
+    return data
 
 
-def compute_cost(df_results: pd.DataFrame):
+def compute_cost(data: pd.DataFrame, gain_tp_weed: float = 0.5, cost_fp_weed: float = 0.3):
     """
     compute "cost" score
     Parameters
     ----------
-    df_results
+    data: df of results, extracted from txt files of inference
+    gain_tp_weed: Cost saved, when correctly killing 1 weed plant
+    cost_fp_weed: Cost incurred, when incorrectly killing 1 corn plant
 
     Returns
     -------
-
+    df with new "cost_score" col.positive values indicate $ gained. negative means it's losing $
     """
-    df_results["cost_score"] = (COST_TP_WEED * df_results["tp_weed"]) - (COST_FP_WEED * df_results["fp_weed"])
-    return df_results
+    data['cost_score'] = (gain_tp_weed * data["tp_weed"]) - (cost_fp_weed * data["fp_weed"])
+    data['gain_tp_weed'] = gain_tp_weed
+    data['cost_fp_weed'] = cost_fp_weed
+    return data
 
 
-def generate_plots(df_results: pd.DataFrame):
-    """
-    Generate plots of results
-    Parameters
-    ----------
-    df_results
+def grid_cost(data: pd.DataFrame):
+    costs = []
+    for gain_tp_weed in np.arange(0.1, 1.1, 0.1):
+        for cost_fp_weed in np.arange(0.1, 1.1, 0.1):
+            df = compute_cost(data=data, gain_tp_weed=gain_tp_weed, cost_fp_weed=cost_fp_weed)
+            costs.append(df)
+    costs = pd.concat(costs)
+    costs = costs.groupby(['iou_threshold', 'conf_threshold'])['cost_score'].max().reset_index()
+    return costs
 
-    Returns
-    -------
 
-    """
-    # plot - ap
-    fig = plt.figure()
-    plt.title("Average Precision in Test Set - {}".format(filename))
-    plt.plot(df_results['iou_threshold'], df_results['ap_weed'], "-r", label='Weed (AP)')
-    plt.plot(df_results['iou_threshold'], df_results['ap_corn'], "-b", label='Corn (AP)')
-    plt.plot(df_results['iou_threshold'], df_results['m_ap'], "-g", label='mAP (across both classes)')
-    plt.xlabel("IoU Threshold")
-    plt.ylabel("Average Precision (AP)")
-    plt.legend(loc="lower right")
-    fig.savefig('MAP.png')
-
-    # plot - fp weeds
-    fig = plt.figure()
-    plt.title("False Positives (Weeds) in Test Set - {}".format(filename))
-    plt.plot(df_results['iou_threshold'], df_results['fp_weed'], "-b", label='Weed (FP)')
-    plt.plot(df_results['iou_threshold'], df_results['fp_corn'], "-r", label='Corn (FP)')
-    plt.xlabel("IoU Threshold")
-    plt.ylabel("# of False Positives (FP)")
-    # plot - tp weeds (on same fig)
-    plt.plot(df_results['iou_threshold'], df_results['tp_weed'], "-o", color="b", label='Weed (TP)')
-    plt.plot(df_results['iou_threshold'], df_results['tp_corn'], "-o", color="r", label='Corn (TP)')
-    plt.legend(loc="lower right")
-    fig.savefig('TPFP.png')
-
-    # PR curve
-    fig = plt.figure()
-    plt.title("Precision-Recall Curve across different IoU thresholds - \n for filename {}".format(filename))
-    plt.plot(df_results['recall'], df_results['precision'])
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    fig.savefig('Precision-Recall.png')
-
-    # Recall-IoU curve
-    fig = plt.figure()
-    plt.title("Recall-IoU Curve - \n for filename {}".format(filename))
-    plt.plot(df_results['iou_threshold'], df_results['recall'], "-b", label="Recall")
-    plt.plot(df_results['iou_threshold'], df_results['precision'], "-r", label="Precision")
-    plt.xlabel("IoU threshold")
-    plt.legend(loc="lower right")
-    fig.savefig('Recall-Precision-IoU.png')
-
-    # Cost curve
-    fig = plt.figure()
-    plt.title("Cost - \n for filename {}".format(filename))
-    plt.plot(df_results['iou_threshold'], df_results['cost_score'], "-b", label="cost")
-    plt.xlabel("IoU threshold")
-    plt.legend(loc="lower right")
-    fig.savefig('Recall-Precision-IoU.png')
+if __name__ == "__main__":
+    FILES = [f for f in os.listdir('results_ap_conf_iou') if f.endswith('.txt')]  # files with all the data
+    df_extracted = extract_data(FILES)
+    df_results = convert_to_numeric(data=df_extracted)
+    df_costs = grid_cost(data=df_results)
+    make_save_plots(df_results=df_results, df_costs=df_costs)
