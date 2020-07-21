@@ -93,10 +93,11 @@ def cost_plot(df_costs: pd.DataFrame):
         fig = plt.figure()
         plt.title("IoU threshold vs. Cost")
         # plt.plot(df_results['iou_threshold'], df_results['cost_score'], "-b", label="cost")
-        plt.scatter(df_costs['iou_threshold'], df_costs['cost_score'], c="b", label="cost")
-        plt.xlabel("IoU threshold")
+        plt.scatter(df_costs['iou_threshold'], df_costs['cost_score'], c="b", label="IoU")
+        plt.scatter(df_costs['conf_threshold'], df_costs['cost_score'], c="r", label="Confidence")
+        plt.xlabel("IoU/Confidence threshold")
         plt.ylabel("Cost (USD)")
-        # plt.legend(loc="lower right")
+        plt.legend(loc="lower center")
         fig.savefig('IoU_cost.png')
     except Exception as ex:
         print('Error in generating cost plot: {}'.format(ex))
@@ -118,5 +119,5 @@ def make_save_plots(df_results: pd.DataFrame, df_costs: pd.DataFrame):
     tp_fp_plot(df_results=df_results)
     pr_plot(df_results=df_results)
     recall_iou_plot(df_results=df_results)
-    cost_plot(df_results=df_costs)
+    cost_plot(df_costs=df_costs)
 
