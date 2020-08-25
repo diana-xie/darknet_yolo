@@ -1,8 +1,10 @@
 # Yolo-v4 and Yolo-v3 for deep-weeding-bot project
 
-Improving object detection using YOLO v4/v3 for [deep-weeding-bot](https://github.com/diana-xie/deep-weeding-bot) project. Object detection is customized for corn vs. weed detection, in actual footage from robot traversing corn fields.
+Improving object detection using YOLO v4 for [deep-weeding-bot](https://github.com/diana-xie/deep-weeding-bot) project. Object detection is customized for corn vs. weed detection, in actual footage from robot traversing corn fields.
 
-<img src="https://github.com/diana-xie/deep-weeding-bot/blob/master/documentation/weed-object-detection.gif?raw=true" width="500px">
+See Medium article on some mAP and cost analysis I did: [link](https://medium.com/@dianaxie/evaluating-map-for-an-object-detection-agribot-3e7bcb52623b?source=friends_link&sk=7597fe77cdda033cca4a125b26bc7187)
+
+<img src="https://github.com/diana-xie/deep-weeding-bot/blob/master/documentation/weed-object-detection-gif.gif?raw=true" width="500px">
 
 - Libraries used: 
   * YOLO v4: [YOLO v4](https://github.com/AlexeyAB/darknet)
@@ -14,6 +16,7 @@ Improving object detection using YOLO v4/v3 for [deep-weeding-bot](https://githu
 # Results: 
 - Notebook: [yolo_v4.ipynb](https://github.com/diana-xie/darknet_yolo/blob/master/yolo_v4.ipynb)
 - Data augmentation code: [yolo_setup](https://github.com/diana-xie/deep-weeding-bot/tree/master/yolo_setup/yolo_v4)
+- mAP and project cost analysis: [Medium](https://medium.com/@dianaxie/evaluating-map-for-an-object-detection-agribot-3e7bcb52623b?source=friends_link&sk=7597fe77cdda033cca4a125b26bc7187)
 
 # Overview
 
